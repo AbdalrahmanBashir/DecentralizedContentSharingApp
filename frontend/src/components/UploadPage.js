@@ -8,9 +8,11 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { uploadToIPFS } from "../services/ipfsService"; // Use the local IPFS service
+import { registerContent, getWeb3 } from "../services/web3Service"; // Smart contract interaction
 
 const UploadPage = () => {
   const [file, setFile] = useState(null);
+  const [title, setTitle] = useState(""); // Store research title
   const [ipfsHash, setIpfsHash] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -33,12 +35,25 @@ const UploadPage = () => {
       setIsUploading(true);
       setStatusMessage("Uploading file to IPFS...");
 
-      // Upload file to your local IPFS node
+      // Upload file to IPFS
       const ipfsHash = await uploadToIPFS(file);
       setIpfsHash(ipfsHash);
       setStatusMessage(`File uploaded to IPFS with hash: ${ipfsHash}`);
+
+      // Now, register the content in the smart contract
+      setStatusMessage("Registering content to the smart contract...");
+
+      const web3 = getWeb3();
+      const accounts = await web3.eth.getAccounts();
+      const account = accounts[0]; // Assuming the first account is used
+
+      await registerContent(title, ipfsHash, account);
+      setStatusMessage("Content successfully registered in the blockchain!");
     } catch (error) {
-      setErrorMessage("Error uploading file to IPFS. " + error.message);
+      setErrorMessage(
+        "Error uploading file or interacting with the blockchain: " +
+          error.message
+      );
     } finally {
       setIsUploading(false);
     }
@@ -57,7 +72,14 @@ const UploadPage = () => {
       {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 
       <form onSubmit={handleSubmit}>
-        <TextField fullWidth label="Research Title" margin="normal" required />
+        <TextField
+          fullWidth
+          label="Research Title"
+          margin="normal"
+          required
+          value={title}
+          onChange={(e) => setTitle(e.target.value)} // Track title input
+        />
         <input
           accept="application/pdf"
           type="file"
@@ -69,7 +91,7 @@ const UploadPage = () => {
           <CircularProgress sx={{ mt: 2 }} />
         ) : (
           <Button type="submit" variant="contained" color="primary">
-            Upload to IPFS
+            Upload to IPFS & Register
           </Button>
         )}
       </form>
