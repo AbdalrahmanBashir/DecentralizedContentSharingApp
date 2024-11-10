@@ -1,75 +1,198 @@
-import React from "react";
+// Navbar.js
+import React, { useState } from "react";
 import {
-  Drawer,
-  List,
-  ListItem,
-  ListItemText,
+  AppBar,
   Toolbar,
-  Divider,
-  ListItemIcon,
   Typography,
+  IconButton,
   Box,
+  Button,
+  Menu,
+  MenuItem,
+  useMediaQuery,
+  Avatar,
+  Tooltip,
 } from "@mui/material";
 import { Link } from "react-router-dom";
+import MenuIcon from "@mui/icons-material/Menu";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import UploadIcon from "@mui/icons-material/CloudUpload";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import SettingsIcon from "@mui/icons-material/Settings";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import WalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import useWallet from "../hooks/useWallet";
+import { useTheme } from "@mui/material/styles";
 
-const drawerWidth = 240;
+const Navbar = () => {
+  const {
+    account: walletAddress,
+    isConnected,
+    connectWallet,
+    disconnectWallet,
+  } = useWallet();
 
-const Sidebar = () => {
-  const { account: walletAddress, isConnected } = useWallet();
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [walletMenuAnchorEl, setWalletMenuAnchorEl] = useState(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  // Function to format the wallet address for a cleaner display
   const formatAddress = (address) => {
     if (!address) return "";
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
-  return (
-    <Drawer
-      sx={{
-        width: drawerWidth,
-        flexShrink: 0,
-        "& .MuiDrawer-paper": {
-          width: drawerWidth,
-          boxSizing: "border-box",
-        },
-      }}
-      variant="permanent"
-      anchor="left"
-    >
-      <Toolbar />
-      {/* Display the connected wallet address if available */}
-      {isConnected && walletAddress && (
-        <Box sx={{ p: 2, textAlign: "center" }}>
-          <Typography variant="subtitle1" color="primary">
-            Connected Wallet
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            {formatAddress(walletAddress)}
-          </Typography>
-        </Box>
-      )}
-      <Divider />
-      <List>
-        <ListItem button component={Link} to="/">
-          <ListItemIcon>
-            <DashboardIcon />
-          </ListItemIcon>
-          <ListItemText primary="Dashboard" />
-        </ListItem>
+  const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
+  const handleWalletMenuOpen = (event) =>
+    setWalletMenuAnchorEl(event.currentTarget);
+  const handleWalletMenuClose = () => setWalletMenuAnchorEl(null);
 
-        <ListItem button component={Link} to="/upload">
-          <ListItemIcon>
-            <UploadIcon />
-          </ListItemIcon>
-          <ListItemText primary="Upload Research" />
-        </ListItem>
-      </List>
-      <Divider />
-    </Drawer>
+  const handleReconnect = async () => {
+    disconnectWallet();
+    connectWallet();
+  };
+
+  return (
+    <AppBar
+      position="fixed"
+      sx={{
+        zIndex: theme.zIndex.drawer + 1,
+        bgcolor: theme.palette.primary.main,
+      }}
+    >
+      <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
+        <Typography
+          variant="h6"
+          component="div"
+          sx={{ flexGrow: 1, color: "white", fontWeight: "bold" }}
+        >
+          Decentralized Content Platform
+        </Typography>
+
+        {isMobile ? (
+          <>
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              edge="end"
+              onClick={handleMenuOpen}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
+            >
+              <MenuItem component={Link} to="/" onClick={handleMenuClose}>
+                <DashboardIcon sx={{ mr: 1 }} /> Dashboard
+              </MenuItem>
+              <MenuItem component={Link} to="/upload" onClick={handleMenuClose}>
+                <UploadIcon sx={{ mr: 1 }} /> Upload Research
+              </MenuItem>
+              <MenuItem
+                component={Link}
+                to="/view-content"
+                onClick={handleMenuClose}
+              >
+                <VisibilityIcon sx={{ mr: 1 }} /> View Content
+              </MenuItem>
+              <MenuItem
+                component={Link}
+                to="/user-management"
+                onClick={handleMenuClose}
+              >
+                <AccountCircleIcon sx={{ mr: 1 }} /> User Management
+              </MenuItem>
+              <MenuItem
+                component={Link}
+                to="/settings"
+                onClick={handleMenuClose}
+              >
+                <SettingsIcon sx={{ mr: 1 }} /> Platform Settings
+              </MenuItem>
+            </Menu>
+          </>
+        ) : (
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Button
+              color="inherit"
+              component={Link}
+              to="/"
+              startIcon={<DashboardIcon />}
+            >
+              Dashboard
+            </Button>
+            <Button
+              color="inherit"
+              component={Link}
+              to="/upload"
+              startIcon={<UploadIcon />}
+            >
+              Upload Research
+            </Button>
+            <Button
+              color="inherit"
+              component={Link}
+              to="/view-content"
+              startIcon={<VisibilityIcon />}
+            >
+              View Content
+            </Button>
+            <Button
+              color="inherit"
+              component={Link}
+              to="/user-management"
+              startIcon={<AccountCircleIcon />}
+            >
+              User Management
+            </Button>
+            <Button
+              color="inherit"
+              component={Link}
+              to="/settings"
+              startIcon={<SettingsIcon />}
+            >
+              Platform Settings
+            </Button>
+          </Box>
+        )}
+
+        {/* Wallet Section */}
+        <Box sx={{ display: "flex", alignItems: "center", ml: 2 }}>
+          {isConnected ? (
+            <>
+              <Tooltip title="Wallet Options">
+                <IconButton onClick={handleWalletMenuOpen} color="inherit">
+                  <Avatar sx={{ bgcolor: theme.palette.secondary.main }}>
+                    {formatAddress(walletAddress)[0]}
+                  </Avatar>
+                </IconButton>
+              </Tooltip>
+              <Menu
+                anchorEl={walletMenuAnchorEl}
+                open={Boolean(walletMenuAnchorEl)}
+                onClose={handleWalletMenuClose}
+              >
+                <MenuItem disabled>{walletAddress}</MenuItem>
+                <MenuItem onClick={disconnectWallet}>Disconnect</MenuItem>
+              </Menu>
+            </>
+          ) : (
+            <Button
+              variant="outlined"
+              color="inherit"
+              onClick={handleReconnect}
+              startIcon={<WalletIcon />}
+            >
+              Connect Wallet
+            </Button>
+          )}
+        </Box>
+      </Toolbar>
+    </AppBar>
   );
 };
 
-export default Sidebar;
+export default Navbar;

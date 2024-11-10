@@ -1,22 +1,60 @@
+// App.js
 import React from "react";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import Web3 from "web3";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import MainLayout from "./components/MainLayout";
 import Dashboard from "./components/Dashboard";
-import UploadPage from "./components/UploadPage";
+import UploadResearch from "./components/UploadResearch";
+import ViewContent from "./components/ViewContent";
+import UserManagement from "./components/UserManagement";
+import PlatformSettings from "./components/PlatformSettings";
 
-function App() {
-  console.log("App is rendering..."); // Log to see if the App component is running
-
+const App = () => {
   return (
     <Router>
-      <div className="App">
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/upload" element={<UploadPage />} />
-        </Routes>
-      </div>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <MainLayout>
+              <Dashboard />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/upload"
+          element={
+            <MainLayout>
+              <UploadResearch />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/view-content"
+          element={
+            <MainLayout>
+              <ViewContent />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/user-management"
+          element={
+            <MainLayout>
+              <UserManagement />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <MainLayout>
+              <PlatformSettings />
+            </MainLayout>
+          }
+        />
+      </Routes>
     </Router>
   );
-}
+};
 
 export default App;
