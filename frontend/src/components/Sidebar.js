@@ -1,4 +1,3 @@
-// Navbar.js
 import React, { useState } from "react";
 import {
   AppBar,
@@ -9,20 +8,20 @@ import {
   Button,
   Menu,
   MenuItem,
-  useMediaQuery,
   Avatar,
   Tooltip,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import UploadIcon from "@mui/icons-material/CloudUpload";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import SettingsIcon from "@mui/icons-material/Settings";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import WalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import useWallet from "../hooks/useWallet";
-import { useTheme } from "@mui/material/styles";
+import { useAuth } from "../hooks/AuthContext";
 
 const Navbar = () => {
   const {
@@ -31,6 +30,8 @@ const Navbar = () => {
     connectWallet,
     disconnectWallet,
   } = useWallet();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   const [anchorEl, setAnchorEl] = useState(null);
   const [walletMenuAnchorEl, setWalletMenuAnchorEl] = useState(null);
@@ -47,6 +48,12 @@ const Navbar = () => {
   const handleWalletMenuOpen = (event) =>
     setWalletMenuAnchorEl(event.currentTarget);
   const handleWalletMenuClose = () => setWalletMenuAnchorEl(null);
+
+  const handleLogout = () => {
+    disconnectWallet();
+    logout();
+    navigate("/verify", { replace: true });
+  };
 
   const handleReconnect = async () => {
     disconnectWallet();
@@ -72,12 +79,7 @@ const Navbar = () => {
 
         {isMobile ? (
           <>
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              edge="end"
-              onClick={handleMenuOpen}
-            >
+            <IconButton color="inherit" onClick={handleMenuOpen}>
               <MenuIcon />
             </IconButton>
             <Menu
@@ -104,13 +106,6 @@ const Navbar = () => {
                 onClick={handleMenuClose}
               >
                 <AccountCircleIcon sx={{ mr: 1 }} /> User Management
-              </MenuItem>
-              <MenuItem
-                component={Link}
-                to="/settings"
-                onClick={handleMenuClose}
-              >
-                <SettingsIcon sx={{ mr: 1 }} /> Platform Settings
               </MenuItem>
             </Menu>
           </>
@@ -148,19 +143,11 @@ const Navbar = () => {
             >
               User Management
             </Button>
-            <Button
-              color="inherit"
-              component={Link}
-              to="/settings"
-              startIcon={<SettingsIcon />}
-            >
-              Platform Settings
-            </Button>
           </Box>
         )}
 
-        {/* Wallet Section */}
         <Box sx={{ display: "flex", alignItems: "center", ml: 2 }}>
+          {/* Wallet Section */}
           {isConnected ? (
             <>
               <Tooltip title="Wallet Options">
@@ -175,8 +162,9 @@ const Navbar = () => {
                 open={Boolean(walletMenuAnchorEl)}
                 onClose={handleWalletMenuClose}
               >
-                <MenuItem disabled>{walletAddress}</MenuItem>
-                <MenuItem onClick={disconnectWallet}>Disconnect</MenuItem>
+                <MenuItem disabled>{formatAddress(walletAddress)}</MenuItem>
+                <MenuItem onClick={handleReconnect}>Reconnect</MenuItem>
+                <MenuItem onClick={handleLogout}>Logout</MenuItem>
               </Menu>
             </>
           ) : (

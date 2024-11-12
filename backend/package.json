@@ -29,6 +29,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "solidity-bytes-utils": "^0.8.2",
     "web3": "^4.14.0"
   }

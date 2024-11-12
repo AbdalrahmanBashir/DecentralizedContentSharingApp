@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   CssBaseline,
@@ -11,7 +11,6 @@ import {
   Card,
   CardContent,
   CardActions,
-  IconButton,
   Divider,
   useTheme,
 } from "@mui/material";
@@ -29,29 +28,52 @@ import {
   fetchCollaborativeContent,
 } from "../services/web3Service";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/AuthContext";
 
-const Dashboard = () => {
+const Dashboard = React.memo(() => {
   const theme = useTheme();
   const { account, isConnected, error, loading, networkId } = useWallet();
+  const { isVerified, userMeta } = useAuth();
   const [userContent, setUserContent] = useState([]);
   const [collaborativeContent, setCollaborativeContent] = useState([]);
   const [recentActivities, setRecentActivities] = useState([]);
+  const [fetchError, setFetchError] = useState(null);
   const navigate = useNavigate();
 
+  // Redirect if not verified
   useEffect(() => {
+    if (!isVerified) {
+      navigate("/verify");
+    }
+  }, [isVerified, navigate]);
+
+  // Fetch content data
+  const fetchData = useCallback(async () => {
     if (isConnected && account) {
-      fetchUserContent(account).then(setUserContent);
-      fetchCollaborativeContent(account).then(setCollaborativeContent);
-      setRecentActivities([
-        { id: 1, title: "Added new content", timestamp: "10 mins ago" },
-        { id: 2, title: "Collaborated on content", timestamp: "1 hour ago" },
-      ]);
+      try {
+        const [userContentData, collaborativeContentData] = await Promise.all([
+          fetchUserContent(account),
+          fetchCollaborativeContent(account),
+        ]);
+        setUserContent(userContentData);
+        setCollaborativeContent(collaborativeContentData);
+        setRecentActivities([
+          { id: 1, title: "Added new content", timestamp: "10 mins ago" },
+          { id: 2, title: "Collaborated on content", timestamp: "1 hour ago" },
+        ]);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+        setFetchError("Failed to load content data. Please try again.");
+      }
     }
   }, [isConnected, account]);
 
-  const formatAddress = (address) => {
-    return address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "";
-  };
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const formatAddress = (address) =>
+    address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "";
 
   return (
     <Box sx={{ display: "flex", bgcolor: "#f5f5f5", minHeight: "100vh" }}>
@@ -60,17 +82,10 @@ const Dashboard = () => {
 
       <Box
         component="main"
-        sx={{
-          flexGrow: 1,
-          mx: "auto",
-          p: 3,
-          bgcolor: "#f5f5f5",
-          maxWidth: "1200px",
-        }}
+        sx={{ flexGrow: 1, mx: "auto", p: 3, maxWidth: "1200px" }}
       >
         <Toolbar />
 
-        {/* Dashboard Title */}
         <Typography
           variant="h4"
           align="center"
@@ -80,17 +95,9 @@ const Dashboard = () => {
           Dashboard Overview
         </Typography>
 
-        {/* Wallet Info */}
         {isConnected && (
           <Box sx={{ textAlign: "center", mb: 4 }}>
-            <Typography
-              variant="h6"
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+            <Typography variant="h6">
               <AccountCircle sx={{ mr: 1 }} /> Connected Wallet:{" "}
               {formatAddress(account)}
             </Typography>
@@ -100,8 +107,7 @@ const Dashboard = () => {
           </Box>
         )}
 
-        {/* Loading and Error Display */}
-        {loading && (
+        {loading ? (
           <Box
             sx={{
               display: "flex",
@@ -115,202 +121,167 @@ const Dashboard = () => {
               Loading data...
             </Typography>
           </Box>
-        )}
-        {error && (
+        ) : fetchError ? (
           <Alert severity="error" sx={{ mt: 2 }}>
-            {error}
+            {fetchError}
           </Alert>
+        ) : (
+          <>
+            <Box
+              sx={{ mt: 4, display: "flex", gap: 2, justifyContent: "center" }}
+            >
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<Add />}
+                onClick={() => navigate("/upload")}
+              >
+                Register New Content
+              </Button>
+              <Button
+                variant="outlined"
+                color="primary"
+                startIcon={<Visibility />}
+                onClick={() => navigate("/view-content")}
+              >
+                View My Content
+              </Button>
+            </Box>
+
+            <Divider sx={{ my: 4 }} />
+
+            {/* Recent Activities Section */}
+            <Box sx={{ bgcolor: "#ffffff", p: 2, borderRadius: 2 }}>
+              <Typography variant="h5" align="center" sx={{ mb: 2 }}>
+                Recent Activities
+              </Typography>
+              <Grid container spacing={2}>
+                {recentActivities.length ? (
+                  recentActivities.map((activity) => (
+                    <Grid item xs={12} sm={6} md={4} key={activity.id}>
+                      <Card variant="outlined">
+                        <CardContent>
+                          <Typography variant="body2">
+                            <EventNote
+                              sx={{ mr: 1, color: theme.palette.info.main }}
+                            />
+                            {activity.title}
+                          </Typography>
+                          <Typography variant="caption" color="textSecondary">
+                            {activity.timestamp}
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))
+                ) : (
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    align="center"
+                  >
+                    No recent activities yet.
+                  </Typography>
+                )}
+              </Grid>
+            </Box>
+
+            <Divider sx={{ my: 4 }} />
+
+            {/* User Content Section */}
+            <Box sx={{ bgcolor: "#ffffff", p: 2, borderRadius: 2 }}>
+              <Typography variant="h5" align="center" sx={{ mb: 2 }}>
+                My Content
+              </Typography>
+              <Grid container spacing={2}>
+                {userContent.length ? (
+                  userContent.map((content) => (
+                    <Grid item xs={12} sm={6} md={4} key={content.id}>
+                      <Card variant="outlined">
+                        <CardContent>
+                          <Typography variant="h6">{content.title}</Typography>
+                          <Typography variant="body2">
+                            Category: {content.category}
+                          </Typography>
+                          <Typography variant="body2">
+                            Access Count: {content.accessCount}
+                          </Typography>
+                          <Typography variant="body2">
+                            Visibility:{" "}
+                            {content.isPublic ? "Public" : "Private"}
+                          </Typography>
+                        </CardContent>
+                        <CardActions>
+                          <Button
+                            size="small"
+                            color="primary"
+                            onClick={() => navigate(`/content/${content.id}`)}
+                          >
+                            View Details
+                          </Button>
+                        </CardActions>
+                      </Card>
+                    </Grid>
+                  ))
+                ) : (
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    align="center"
+                  >
+                    You have no registered content.
+                  </Typography>
+                )}
+              </Grid>
+            </Box>
+
+            <Divider sx={{ my: 4 }} />
+
+            {/* Collaborative Content Section */}
+            <Box sx={{ bgcolor: "#ffffff", p: 2, borderRadius: 2 }}>
+              <Typography variant="h5" align="center" sx={{ mb: 2 }}>
+                Collaborative Content
+              </Typography>
+              <Grid container spacing={2}>
+                {collaborativeContent.length ? (
+                  collaborativeContent.map((content) => (
+                    <Grid item xs={12} sm={6} md={4} key={content.id}>
+                      <Card variant="outlined">
+                        <CardContent>
+                          <Typography variant="h6">{content.title}</Typography>
+                          <Typography variant="body2">
+                            <Group sx={{ mr: 1 }} />
+                            Owned by {formatAddress(content.owner)}
+                          </Typography>
+                        </CardContent>
+                        <CardActions>
+                          <Button
+                            size="small"
+                            color="primary"
+                            onClick={() => navigate(`/content/${content.id}`)}
+                          >
+                            View Details
+                          </Button>
+                        </CardActions>
+                      </Card>
+                    </Grid>
+                  ))
+                ) : (
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    align="center"
+                  >
+                    No collaborative content available.
+                  </Typography>
+                )}
+              </Grid>
+            </Box>
+          </>
         )}
-
-        {/* Quick Actions */}
-        <Box sx={{ mt: 4, display: "flex", gap: 2, justifyContent: "center" }}>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<Add />}
-            onClick={() => navigate("/upload")}
-          >
-            Register New Content
-          </Button>
-          <Button
-            variant="outlined"
-            color="primary"
-            startIcon={<Visibility />}
-            onClick={() => navigate("/my-content")}
-          >
-            View My Content
-          </Button>
-        </Box>
-
-        {/* Recent Activities Section */}
-        <Box sx={{ mt: 4, bgcolor: "#ffffff", p: 2, borderRadius: 2 }}>
-          <Typography variant="h5" align="center" sx={{ mb: 2 }}>
-            Recent Activities
-          </Typography>
-          <Grid container spacing={2}>
-            {recentActivities.length ? (
-              recentActivities.map((activity) => (
-                <Grid item xs={12} sm={6} md={4} key={activity.id}>
-                  <Card
-                    variant="outlined"
-                    sx={{
-                      bgcolor: "#f9f9f9",
-                      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-                    }}
-                  >
-                    <CardContent>
-                      <Typography
-                        variant="body2"
-                        sx={{ display: "flex", alignItems: "center" }}
-                      >
-                        <EventNote
-                          sx={{ mr: 1, color: theme.palette.info.main }}
-                        />
-                        {activity.title}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        color="textSecondary"
-                        sx={{ mt: 1, display: "block" }}
-                      >
-                        {activity.timestamp}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))
-            ) : (
-              <Typography
-                variant="body2"
-                color="textSecondary"
-                align="center"
-                sx={{ width: "100%", mt: 1 }}
-              >
-                No recent activities yet.
-              </Typography>
-            )}
-          </Grid>
-        </Box>
-
-        <Divider sx={{ my: 4 }} />
-
-        {/* My Content Section */}
-        <Box sx={{ mt: 4, bgcolor: "#ffffff", p: 2, borderRadius: 2 }}>
-          <Typography variant="h5" align="center" sx={{ mb: 2 }}>
-            My Content
-          </Typography>
-          <Grid container spacing={2}>
-            {userContent.length ? (
-              userContent.map((content) => (
-                <Grid item xs={12} sm={6} md={4} key={content.id}>
-                  <Card
-                    variant="outlined"
-                    sx={{
-                      bgcolor: "#f9f9f9",
-                      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-                    }}
-                  >
-                    <CardContent>
-                      <Typography variant="h6">{content.title}</Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        Category: {content.category}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        Access Count: {content.accessCount}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        Visibility: {content.isPublic ? "Public" : "Private"}
-                      </Typography>
-                    </CardContent>
-                    <CardActions>
-                      <Button
-                        size="small"
-                        color="primary"
-                        onClick={() => navigate(`/content/${content.id}`)}
-                      >
-                        View Details
-                      </Button>
-                    </CardActions>
-                  </Card>
-                </Grid>
-              ))
-            ) : (
-              <Typography
-                variant="body2"
-                color="textSecondary"
-                align="center"
-                sx={{ width: "100%", mt: 1 }}
-              >
-                You have no registered content.
-              </Typography>
-            )}
-          </Grid>
-        </Box>
-
-        <Divider sx={{ my: 4 }} />
-
-        {/* Collaborative Content Section */}
-        <Box sx={{ mt: 4, bgcolor: "#ffffff", p: 2, borderRadius: 2 }}>
-          <Typography variant="h5" align="center" sx={{ mb: 2 }}>
-            Collaborative Content
-          </Typography>
-          <Grid container spacing={2}>
-            {collaborativeContent.length ? (
-              collaborativeContent.map((content) => (
-                <Grid item xs={12} sm={6} md={4} key={content.id}>
-                  <Card
-                    variant="outlined"
-                    sx={{
-                      bgcolor: "#f9f9f9",
-                      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-                    }}
-                  >
-                    <CardContent>
-                      <Typography variant="h6">{content.title}</Typography>
-                      <Typography
-                        variant="body2"
-                        color="textSecondary"
-                        sx={{ display: "flex", alignItems: "center" }}
-                      >
-                        <Group
-                          sx={{ mr: 1, color: theme.palette.secondary.main }}
-                        />
-                        Owned by {formatAddress(content.owner)}
-                      </Typography>
-                    </CardContent>
-                    <CardActions>
-                      <Button
-                        size="small"
-                        color="primary"
-                        onClick={() => navigate(`/content/${content.id}`)}
-                      >
-                        View Details
-                      </Button>
-                    </CardActions>
-                  </Card>
-                </Grid>
-              ))
-            ) : (
-              <Typography
-                variant="body2"
-                color="textSecondary"
-                align="center"
-                sx={{ width: "100%", mt: 1 }}
-              >
-                No collaborative content available.
-              </Typography>
-            )}
-          </Grid>
-        </Box>
-
-        {/* Footer Alert */}
-        <Alert severity="info" sx={{ mt: 4 }}>
-          Note: Make sure you're connected to the correct network for
-          transactions.
-        </Alert>
       </Box>
     </Box>
   );
-};
+});
 
 export default Dashboard;
