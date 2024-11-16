@@ -1,31 +1,34 @@
-// hooks/AuthContext.js
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  // Initialize the state with the value from localStorage
+  // Initialize the isVerified state with the value from localStorage
+  // We use a function to lazily initialize the state to avoid unnecessary localStorage reads during re-renders
   const [isVerified, setIsVerified] = useState(
     () => localStorage.getItem("isVerified") === "true"
   );
 
-  // Verify function to update state and localStorage
+  // The verify function is used to update the verification state
+  // It sets isVerified to true and updates the localStorage to persist this state
   const verify = (userMeta) => {
-    setIsVerified(true);
-    localStorage.setItem("isVerified", "true");
-    console.log("User meta:", userMeta);
+    setIsVerified(true); // Update the state to reflect that the user is verified
+    localStorage.setItem("isVerified", "true"); // Persist the verification state in localStorage
+    console.log("User meta:", userMeta); // Log user metadata for debugging purposes
   };
 
-  // Logout function to reset state and localStorage
+  // The logout function resets the verification state
+  // It sets isVerified to false and removes the related entry from localStorage
   const logout = () => {
-    setIsVerified(false);
-    localStorage.removeItem("isVerified");
+    setIsVerified(false); // Update the state to reflect that the user is not verified
+    localStorage.removeItem("isVerified"); // Remove the verification state from localStorage
   };
 
+  // The AuthContext.Provider component provides the isVerified state and the verify and logout functions
+  // to any descendant components that consume this context
   return (
     <AuthContext.Provider value={{ isVerified, verify, logout }}>
-      {children}
+      {children} {/* Render any nested components passed as children */}
     </AuthContext.Provider>
   );
 };

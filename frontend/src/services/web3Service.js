@@ -53,9 +53,14 @@ const getAccount = () => {
   return account;
 };
 
-// Fetch all content IDs
+/**
+ * Fetch all content IDs
+ * @returns {Promise<string[]>} A promise that resolves to an array of strings, each representing a content ID.
+ * @throws Will throw an error if unable to fetch the content IDs.
+ */
 export const getAllContentIds = async () => {
   try {
+    // Call the smart contract to get all content IDs
     return await getContract().methods.getAllContentIds().call();
   } catch (error) {
     console.error("Error retrieving all content IDs:", error);
@@ -63,12 +68,20 @@ export const getAllContentIds = async () => {
   }
 };
 
-// Fetch content details by content ID
+/**
+ * Fetch content details by content ID
+ * @param {string} contentId - The content ID.
+ * @returns {Promise<Object>} A promise that resolves to an object containing the content details.
+ * @throws Will throw an error if unable to fetch the content details.
+ */
 export const getLatestContent = async (contentId) => {
   try {
+    // Call the smart contract to get the latest content details
     const content = await getContract()
       .methods.getLatestContent(contentId)
       .call();
+
+    // Return the content details as an object
     return {
       id: contentId,
       title: content.title,
@@ -81,12 +94,20 @@ export const getLatestContent = async (contentId) => {
       contentHash: content.contentHash,
     };
   } catch (error) {
+    // Log and throw any errors that occur
     console.error("Error retrieving latest content details:", error);
     throw error;
   }
 };
 
-// Register new content
+/**
+ * Register new content
+ * @param {string} title - The title of the content.
+ * @param {string} ipfsHash - The IPFS hash of the content.
+ * @param {string} category - The category of the content.
+ * @returns {Promise<string>} A promise that resolves to the content ID.
+ * @throws Will throw an error if unable to register the content.
+ */
 export const registerContent = async (title, ipfsHash, category) => {
   const account = getAccount();
   try {
@@ -100,7 +121,14 @@ export const registerContent = async (title, ipfsHash, category) => {
   }
 };
 
-// Update content details
+/**
+ * Update content details
+ * @param {string} contentId - The ID of the content to update.
+ * @param {string} newTitle - The new title of the content.
+ * @param {string} newCategory - The new category of the content.
+ * @returns {Promise<object>} A promise that resolves to the transaction receipt.
+ * @throws Will throw an error if unable to update the content details.
+ */
 export const updateContentDetails = async (
   contentId,
   newTitle,
@@ -108,6 +136,7 @@ export const updateContentDetails = async (
 ) => {
   const account = getAccount();
   try {
+    // Call the contract to update the content details
     const receipt = await getContract()
       .methods.updateContentDetails(contentId, newTitle, newCategory)
       .send({ from: account });
@@ -118,7 +147,12 @@ export const updateContentDetails = async (
   }
 };
 
-// Vote to flag content
+/**
+ * Vote to flag content
+ * @param {string} contentId - The ID of the content to flag.
+ * @returns {Promise<object>} A promise that resolves to the transaction receipt.
+ * @throws Will throw an error if unable to flag the content.
+ */
 export const voteToFlagContent = async (contentId) => {
   const account = getAccount();
   try {
@@ -130,6 +164,7 @@ export const voteToFlagContent = async (contentId) => {
       );
     }
 
+    // Call the contract to vote to flag the content
     const receipt = await getContract()
       .methods.voteToFlagContent(contentId)
       .send({ from: account });
@@ -140,7 +175,12 @@ export const voteToFlagContent = async (contentId) => {
   }
 };
 
-// Vote to restore flagged content
+/**
+ * Vote to restore flagged content
+ * @param {string} contentId - The ID of the content to restore.
+ * @returns {Promise<object>} A promise that resolves to the transaction receipt.
+ * @throws Will throw an error if unable to restore the content.
+ */
 export const voteToRestoreContent = async (contentId) => {
   const account = getAccount();
   try {
@@ -152,6 +192,7 @@ export const voteToRestoreContent = async (contentId) => {
       );
     }
 
+    // Send the transaction to restore the content
     const receipt = await getContract()
       .methods.voteToRestoreContent(contentId)
       .send({ from: account });
@@ -162,7 +203,12 @@ export const voteToRestoreContent = async (contentId) => {
   }
 };
 
-// Vote to verify content
+/**
+ * Vote to verify content
+ * @param {string} contentId - The ID of the content to vote on.
+ * @returns {Promise<object>} A promise that resolves to the transaction receipt.
+ * @throws Will throw an error if unable to verify the content.
+ */
 export const voteToVerifyContent = async (contentId) => {
   const account = getAccount();
   try {
@@ -174,9 +220,11 @@ export const voteToVerifyContent = async (contentId) => {
       );
     }
 
+    // Call the voteToVerifyContent function on the smart contract
     const receipt = await getContract()
       .methods.voteToVerifyContent(contentId)
       .send({ from: account });
+
     return receipt;
   } catch (error) {
     console.error("Error verifying content:", error);
@@ -184,9 +232,15 @@ export const voteToVerifyContent = async (contentId) => {
   }
 };
 
-// Fetch collaborators for a content ID
+/**
+ * Fetch collaborators for a given content ID.
+ * @param {string} contentId - The ID of the content to fetch collaborators for.
+ * @returns {Promise<address[]>} A promise that resolves to an array of collaborator addresses.
+ * @throws Will throw an error if unable to retrieve collaborators.
+ */
 export const getCollaborators = async (contentId) => {
   try {
+    // Retrieve collaborator addresses from the smart contract
     return await getContract().methods.getCollaborators(contentId).call();
   } catch (error) {
     console.error("Error retrieving collaborators:", error);
@@ -194,7 +248,12 @@ export const getCollaborators = async (contentId) => {
   }
 };
 
-// Add a collaborator
+/**
+ * Add a collaborator to a content ID
+ * @param {string} contentId - Content ID
+ * @param {string} collaboratorAddress - Address of the collaborator to be added
+ * @returns {Promise<Object>} Transaction receipt
+ */
 export const addCollaborator = async (contentId, collaboratorAddress) => {
   const account = getAccount();
   try {
@@ -208,7 +267,12 @@ export const addCollaborator = async (contentId, collaboratorAddress) => {
   }
 };
 
-// Remove a collaborator
+/**
+ * Remove a collaborator from a content ID
+ * @param {string} contentId - Content ID
+ * @param {string} collaboratorAddress - Address of the collaborator to be removed
+ * @returns {Promise<Object>} Transaction receipt
+ */
 export const removeCollaborator = async (contentId, collaboratorAddress) => {
   const account = getAccount();
   try {
@@ -235,9 +299,20 @@ export const getContentHash = async (contentId, version) => {
   }
 };
 
-// Fetch action history for a content ID
+/**
+ * Fetch action history for a content ID
+ * @param {string} contentId The ID of the content to fetch history for
+ * @returns {Promise<Object[]>} An array of action history objects with the following properties:
+ *  - actionType: The type of the action (e.g. flag, verify, restore)
+ *  - description: A brief description of the action
+ *  - user: The Ethereum address of the user who performed the action
+ *  - timestamp: The timestamp of the action
+ *  - contentHash: The content hash of the content at the time of the action
+ *  - version: The version of the content at the time of the action
+ */
 export const getActionHistory = async (contentId) => {
   try {
+    // Fetch the raw action history from the contract
     const rawHistory = await getContract()
       .methods.getActionHistory(contentId)
       .call();
@@ -245,13 +320,17 @@ export const getActionHistory = async (contentId) => {
     // Map the raw action history using index access instead of field names
     const formattedHistory = await Promise.all(
       rawHistory.map(async (action) => {
+        // Extract the action type and description from the raw action
         const actionType = parseInt(action[0]);
         const description = action[1];
         const user = action[2];
         const timestamp = Number(action[3]);
-        const version = Number(action[5]);
-        const contentHash = await getContentHash(contentId, version); // Retrieve content hash for the version
 
+        // Extract the content hash from the contract
+        const version = Number(action[5]);
+        const contentHash = await getContentHash(contentId, version);
+
+        // Return the formatted action history object
         return {
           actionType,
           description,
@@ -263,6 +342,7 @@ export const getActionHistory = async (contentId) => {
       })
     );
 
+    // Return the formatted action history
     return formattedHistory;
   } catch (error) {
     console.error("Error retrieving action history:", error);
@@ -270,13 +350,20 @@ export const getActionHistory = async (contentId) => {
   }
 };
 
-// Transfer ownership of content
+/**
+ * Transfer ownership of content
+ * @param {string} contentId The ID of the content to transfer
+ * @param {string} newOwner The address of the new owner
+ * @returns {Promise<Object>} The transaction receipt
+ */
 export const transferOwnership = async (contentId, newOwner) => {
   const account = getAccount();
   try {
+    // Transfer ownership of the content
     const receipt = await getContract()
       .methods.transferOwnership(contentId, newOwner)
       .send({ from: account });
+
     return receipt;
   } catch (error) {
     console.error("Error transferring ownership:", error);
@@ -284,7 +371,10 @@ export const transferOwnership = async (contentId, newOwner) => {
   }
 };
 
-// Fetch all content owned by a specific account
+/**
+ * Fetch all content owned by a specific account
+ * @returns {Promise<Array<Object>>} An array of content objects owned by the account
+ */
 export const fetchUserContent = async () => {
   const account = getAccount();
   try {
@@ -318,11 +408,16 @@ export const fetchUserContent = async () => {
   }
 };
 
-// Fetch collaborative content for a specific account
+/**
+ * Fetch collaborative content for a specific account
+ * @returns {Promise<Array<Object>>} An array of content objects the account is a collaborator on
+ */
 export const fetchCollaborativeContent = async () => {
   const account = getAccount();
   try {
     const contentIds = await getAllContentIds();
+
+    // Iterate over all content IDs and filter out the ones the account is a collaborator on
     const collaborativeContent = await Promise.all(
       contentIds.map(async (contentId) => {
         const content = await getLatestContent(contentId);
@@ -330,6 +425,8 @@ export const fetchCollaborativeContent = async () => {
         return collaborators.includes(account.toLowerCase()) ? content : null;
       })
     );
+
+    // Filter out null values from the array
     return collaborativeContent.filter(Boolean);
   } catch (error) {
     console.error("Error fetching collaborative content:", error);
@@ -337,17 +434,25 @@ export const fetchCollaborativeContent = async () => {
   }
 };
 
-// Helper function to check if the user is the owner or a collaborator
+/**
+ * Helper function to check if the user is the owner or a collaborator
+ *
+ * @param {string} contentId - The ID of the content to check
+ * @param {string} account - The account to check
+ * @returns {Promise<boolean>} Whether the user is the owner or a collaborator
+ */
 const isOwnerOrCollaborator = async (contentId, account) => {
   try {
-    const content = await getLatestContent(contentId);
-    const collaborators = await getCollaborators(contentId);
+    const content = await getLatestContent(contentId); // Fetch the content with the given ID
+    const collaborators = await getCollaborators(contentId); // Fetch all collaborators
 
+    // Check if the account is the owner or a collaborator
     return (
       content.owner.toLowerCase() === account.toLowerCase() ||
       collaborators.includes(account.toLowerCase())
     );
   } catch (error) {
+    // Handle errors and throw a new error
     throw new Error("Failed to check permissions. Please try again.");
   }
 };
