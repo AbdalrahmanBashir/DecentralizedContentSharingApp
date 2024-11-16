@@ -6,8 +6,6 @@ import {
   Typography,
   Alert,
   CircularProgress,
-  Checkbox,
-  FormControlLabel,
   MenuItem,
   Snackbar,
   Card,
@@ -18,11 +16,10 @@ import {
   DialogContent,
 } from "@mui/material";
 import {
-  Public,
-  Lock,
   Category,
   FileUpload,
   InsertDriveFile,
+  CheckCircle,
 } from "@mui/icons-material";
 import { uploadToIPFS, retrieveFromIPFS } from "../services/ipfsService";
 import { registerContent, getWeb3 } from "../services/web3Service";
@@ -31,19 +28,31 @@ const UploadPage = () => {
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
-  const [isPublic, setIsPublic] = useState(false);
   const [ipfsHash, setIpfsHash] = useState("");
   const [registeredContent, setRegisteredContent] = useState(null);
   const [statusMessage, setStatusMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
-  const [fileContent, setFileContent] = useState(null); // Store file content for display
-  const [openDialog, setOpenDialog] = useState(false); // Dialog for displaying file content
+  const [fileContent, setFileContent] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("idle"); // "loading", "success"
+  const [registerStatus, setRegisterStatus] = useState("idle"); // "loading", "success"
 
+  // Handle file selection and auto-populate title
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-    setErrorMessage("");
+    const selectedFile = e.target.files[0];
+
+    if (selectedFile) {
+      setFile(selectedFile);
+      setErrorMessage("");
+
+      // Auto-populate the title with the file name (without the .pdf extension)
+      const fileName = selectedFile.name.replace(/\.pdf$/i, "");
+      if (!title) {
+        setTitle(fileName);
+      }
+    }
   };
 
   const handleSnackbarClose = () => setOpenSnackbar(false);
@@ -51,11 +60,12 @@ const UploadPage = () => {
   const handleDialogClose = () => {
     setOpenDialog(false);
     if (fileContent) {
-      URL.revokeObjectURL(fileContent); // Clean up the Object URL
+      URL.revokeObjectURL(fileContent);
       setFileContent(null);
     }
   };
 
+  // Handle form submission and upload process
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -71,7 +81,10 @@ const UploadPage = () => {
 
       const uploadedIpfsHash = await uploadToIPFS(file);
       setIpfsHash(uploadedIpfsHash);
+      setUploadStatus("success"); // Show green checkmark after success
       setStatusMessage(`File uploaded to IPFS with hash: ${uploadedIpfsHash}`);
+      setRegisterStatus("loading");
+      setStatusMessage("Registering content on the blockchain...");
 
       const web3 = getWeb3();
       const accounts = await web3.eth.getAccounts();
@@ -81,9 +94,9 @@ const UploadPage = () => {
         title,
         uploadedIpfsHash,
         category,
-        isPublic,
         account
       );
+      setRegisterStatus("success"); // Show green checkmark after success
       setStatusMessage("Content successfully registered on the blockchain!");
 
       setRegisteredContent({
@@ -91,13 +104,12 @@ const UploadPage = () => {
         title,
         category,
         ipfsHash: uploadedIpfsHash,
-        isPublic,
       });
 
+      // Reset form fields
       setTitle("");
       setCategory("");
       setFile(null);
-      setIsPublic(false);
       setErrorMessage("");
     } catch (error) {
       setErrorMessage(
@@ -105,18 +117,21 @@ const UploadPage = () => {
           error.message
       );
       setOpenSnackbar(true);
+      setUploadStatus("idle");
+      setRegisterStatus("idle");
     } finally {
       setIsUploading(false);
     }
   };
 
+  // Handle viewing content from IPFS
   const handleViewContent = async () => {
     if (registeredContent?.ipfsHash) {
       try {
         const content = await retrieveFromIPFS(registeredContent.ipfsHash);
-        const url = URL.createObjectURL(content); // Create Object URL for PDF Blob
-        setFileContent(url); // Set the Blob URL for the iframe
-        setOpenDialog(true); // Open the dialog to display the PDF
+        const url = URL.createObjectURL(content);
+        setFileContent(url);
+        setOpenDialog(true);
       } catch (error) {
         setErrorMessage("Error retrieving content from IPFS: " + error.message);
         setOpenSnackbar(true);
@@ -127,13 +142,25 @@ const UploadPage = () => {
   return (
     <Box
       component="main"
-      sx={{ flexGrow: 1, p: 3, bgcolor: "#f5f5f5", height: "100vh" }}
+      sx={{
+        flexGrow: 1,
+        p: 3,
+        bgcolor: "#f5f5f5",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        minHeight: "100vh",
+      }}
     >
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" gutterBottom align="center">
         Upload Research
       </Typography>
 
-      {statusMessage && <Alert severity="info">{statusMessage}</Alert>}
+      {statusMessage && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          {statusMessage}
+        </Alert>
+      )}
       {errorMessage && (
         <Snackbar
           open={openSnackbar}
@@ -147,7 +174,18 @@ const UploadPage = () => {
         </Snackbar>
       )}
 
-      <form onSubmit={handleSubmit}>
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{
+          width: "100%",
+          maxWidth: 600,
+          p: 3,
+          borderRadius: 2,
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+          bgcolor: "#ffffff",
+        }}
+      >
         <TextField
           fullWidth
           label="Research Title"
@@ -155,6 +193,7 @@ const UploadPage = () => {
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          placeholder="Enter a title or leave as file name"
           InputProps={{
             startAdornment: (
               <IconButton edge="start">
@@ -186,24 +225,12 @@ const UploadPage = () => {
           <MenuItem value="Mathematics">Mathematics</MenuItem>
         </TextField>
 
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={isPublic}
-              onChange={(e) => setIsPublic(e.target.checked)}
-              color="primary"
-              icon={<Lock />}
-              checkedIcon={<Public />}
-            />
-          }
-          label="Make Public"
-        />
-
         <Box sx={{ mt: 2 }}>
           <Button
             variant="outlined"
             component="label"
             startIcon={<FileUpload />}
+            fullWidth
           >
             Choose File
             <input
@@ -215,6 +242,25 @@ const UploadPage = () => {
           </Button>
           {file && <Typography sx={{ mt: 1 }}>{file.name}</Typography>}
         </Box>
+        <Box sx={{ mt: 2, display: "flex", alignItems: "center" }}>
+          <Typography variant="body1" sx={{ mr: 1 }}>
+            Uploading to IPFS:
+          </Typography>
+          {uploadStatus === "loading" && (
+            <CircularProgress size={20} color="primary" />
+          )}
+          {uploadStatus === "success" && <CheckCircle color="success" />}
+        </Box>
+
+        <Box sx={{ mt: 2, display: "flex", alignItems: "center" }}>
+          <Typography variant="body1" sx={{ mr: 1 }}>
+            Registering on Blockchain:
+          </Typography>
+          {registerStatus === "loading" && (
+            <CircularProgress size={20} color="primary" />
+          )}
+          {registerStatus === "success" && <CheckCircle color="success" />}
+        </Box>
 
         {isUploading ? (
           <CircularProgress sx={{ mt: 2 }} />
@@ -223,15 +269,16 @@ const UploadPage = () => {
             type="submit"
             variant="contained"
             color="primary"
+            fullWidth
             sx={{ mt: 2 }}
           >
             Upload to IPFS & Register
           </Button>
         )}
-      </form>
+      </Box>
 
       {registeredContent && (
-        <Card sx={{ mt: 4, p: 2 }}>
+        <Card sx={{ mt: 4, width: "100%", maxWidth: 600 }}>
           <CardContent>
             <Typography variant="h5" gutterBottom>
               Registered Content
@@ -239,31 +286,11 @@ const UploadPage = () => {
             <Typography variant="body1">
               <strong>Title:</strong> {registeredContent.title}
             </Typography>
-            <Typography
-              variant="body1"
-              sx={{ display: "flex", alignItems: "center" }}
-            >
-              <Category sx={{ mr: 1 }} />
+            <Typography variant="body1">
               <strong>Category:</strong> {registeredContent.category}
             </Typography>
-            <Typography
-              variant="body1"
-              sx={{ display: "flex", alignItems: "center" }}
-            >
-              <InsertDriveFile sx={{ mr: 1 }} />
+            <Typography variant="body1">
               <strong>IPFS Hash:</strong> {registeredContent.ipfsHash}
-            </Typography>
-            <Typography
-              variant="body1"
-              sx={{ display: "flex", alignItems: "center" }}
-            >
-              {registeredContent.isPublic ? (
-                <Public sx={{ mr: 1 }} />
-              ) : (
-                <Lock sx={{ mr: 1 }} />
-              )}
-              <strong>Visibility:</strong>{" "}
-              {registeredContent.isPublic ? "Public" : "Private"}
             </Typography>
           </CardContent>
           <CardActions>

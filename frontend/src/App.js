@@ -4,7 +4,7 @@ import MainLayout from "./components/MainLayout";
 import Dashboard from "./components/Dashboard";
 import UploadResearch from "./components/UploadResearch";
 import ViewContent from "./components/ViewContent";
-import UserManagement from "./components/UserManagement";
+import ContentManagement from "./components/ContentManagement";
 import VerifyPage from "./components/VerifyPage";
 import { useAuth } from "./hooks/AuthContext";
 
@@ -44,10 +44,10 @@ const App = () => {
             }
           />
           <Route
-            path="/user-management"
+            path="/content-management"
             element={
               <MainLayout>
-                <UserManagement />
+                <ContentManagement />
               </MainLayout>
             }
           />

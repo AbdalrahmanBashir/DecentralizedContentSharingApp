@@ -52,6 +52,8 @@ const Navbar = () => {
   const handleLogout = () => {
     disconnectWallet();
     logout();
+    localStorage.removeItem("walletAddress");
+    localStorage.removeItem("isConnected");
     navigate("/verify", { replace: true });
   };
 
@@ -102,7 +104,7 @@ const Navbar = () => {
               </MenuItem>
               <MenuItem
                 component={Link}
-                to="/user-management"
+                to="/content-management"
                 onClick={handleMenuClose}
               >
                 <AccountCircleIcon sx={{ mr: 1 }} /> User Management
@@ -138,7 +140,7 @@ const Navbar = () => {
             <Button
               color="inherit"
               component={Link}
-              to="/user-management"
+              to="/content-management"
               startIcon={<AccountCircleIcon />}
             >
               User Management

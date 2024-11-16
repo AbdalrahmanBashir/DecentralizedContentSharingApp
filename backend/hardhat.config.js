@@ -11,7 +11,6 @@ module.exports = {
     },
     ganache: {
       url: "HTTP://127.0.0.1:7545",
-      gas: 100000000000000000000000, // Increase gas limit
 
       accounts: [
         "0xbff34b660574ea90d2568d70dc944fa32db3a4657f90c777d3a6bfe2239d7a45",

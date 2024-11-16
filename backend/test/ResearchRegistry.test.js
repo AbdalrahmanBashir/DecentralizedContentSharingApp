@@ -1,143 +1,137 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("ResearchRegistry", function () {
-  let ResearchRegistry, researchRegistry;
-  let owner, addr1, addr2;
+describe("ResearchRegistry Contract", function () {
+  let ResearchRegistry;
+  let researchRegistry;
+  let owner, addr1, addr2, addr3;
+  let contentId;
+  const title = "Test Content";
+  const ipfsHash = "QmTestHash";
+  const category = "Test Category";
 
-  // Deploy contract before each test
-  beforeEach(async function () {
-    [owner, addr1, addr2] = await ethers.getSigners();
+  // Deploy the contract before running the tests
+  before(async () => {
+    [owner, addr1, addr2, addr3] = await ethers.getSigners();
     ResearchRegistry = await ethers.getContractFactory("ResearchRegistry");
     researchRegistry = await ResearchRegistry.deploy();
-    await researchRegistry.deployed();
   });
 
-  // Test content registration
   it("Should register new content successfully", async function () {
-    const title = "Blockchain for Research";
-    const ipfsHash = "QmXYZ1234567890abcdef";
-    const tx = await researchRegistry.registerContent(title, ipfsHash);
-    await tx.wait();
-
-    const contentId = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["string", "string", "address", "uint256"],
-        [
-          title,
-          ipfsHash,
-          owner.address,
-          (await ethers.provider.getBlock()).timestamp,
-        ]
-      )
+    const tx = await researchRegistry.registerContent(
+      title,
+      ipfsHash,
+      category
     );
+    const receipt = await tx.wait();
 
-    const content = await researchRegistry.contents(contentId);
+    // Extract the contentId from the event
+    const event = receipt.events.find(
+      (event) => event.event === "ContentRegistered"
+    );
+    contentId = event.args.contentId;
 
-    // Validate content registration
+    expect(contentId).to.be.a("bytes32");
+    expect(event.args.owner).to.equal(owner.address);
+
+    const content = await researchRegistry.getLatestContent(contentId);
     expect(content.title).to.equal(title);
     expect(content.ipfsHash).to.equal(ipfsHash);
-    expect(content.owner).to.equal(owner.address);
-    expect(content.timestamp).to.be.gt(0);
-  });
-
-  // Test ownership verification
-  it("Should verify the ownership of registered content", async function () {
-    const title = "Blockchain for Research";
-    const ipfsHash = "QmXYZ1234567890abcdef";
-
-    // Register content
-    const tx = await researchRegistry.registerContent(title, ipfsHash);
-    await tx.wait();
-
-    const contentId = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["string", "string", "address", "uint256"],
-        [
-          title,
-          ipfsHash,
-          owner.address,
-          (await ethers.provider.getBlock()).timestamp,
-        ]
-      )
-    );
-
-    const content = await researchRegistry.contents(contentId);
-
-    // Verify the content owner
+    expect(content.category).to.equal(category);
     expect(content.owner).to.equal(owner.address);
   });
 
-  // Test ownership transfer
-  it("Should transfer content ownership", async function () {
-    const title = "Blockchain for Research";
-    const ipfsHash = "QmXYZ1234567890abcdef";
-
-    // Register content
-    const tx = await researchRegistry.registerContent(title, ipfsHash);
-    await tx.wait();
-
-    const contentId = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["string", "string", "address", "uint256"],
-        [
-          title,
-          ipfsHash,
-          owner.address,
-          (await ethers.provider.getBlock()).timestamp,
-        ]
-      )
-    );
-
-    // Transfer ownership to addr1
-    await researchRegistry.transferOwnership(contentId, addr1.address);
-
-    const content = await researchRegistry.contents(contentId);
-
-    // Verify ownership transfer
-    expect(content.owner).to.equal(addr1.address);
+  it("Should prevent duplicate IPFS hash registration", async function () {
+    await expect(
+      researchRegistry.registerContent(title, ipfsHash, category)
+    ).to.be.revertedWith("IPFS hash already registered");
   });
 
-  // Test that only the owner can transfer ownership
-  it("Should only allow the owner to transfer ownership", async function () {
-    const title = "Blockchain for Research";
-    const ipfsHash = "QmXYZ1234567890abcdef";
+  it("Should allow the owner to update content details", async function () {
+    const newTitle = "Updated Title";
+    const newCategory = "Updated Category";
 
-    // Register content
-    const tx = await researchRegistry.registerContent(title, ipfsHash);
-    await tx.wait();
-
-    const contentId = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ["string", "string", "address", "uint256"],
-        [
-          title,
-          ipfsHash,
-          owner.address,
-          (await ethers.provider.getBlock()).timestamp,
-        ]
-      )
+    await researchRegistry.updateContentDetails(
+      contentId,
+      newTitle,
+      newCategory
     );
 
-    // Try to transfer ownership with a non-owner account
+    const updatedContent = await researchRegistry.getLatestContent(contentId);
+    expect(updatedContent.title).to.equal(newTitle);
+    expect(updatedContent.category).to.equal(newCategory);
+  });
+
+  it("Should prevent non-owner from updating content details", async function () {
     await expect(
       researchRegistry
         .connect(addr1)
-        .transferOwnership(contentId, addr2.address)
-    ).to.be.revertedWith("Only the owner can transfer ownership");
+        .updateContentDetails(contentId, "Title", "Category")
+    ).to.be.revertedWith("Not the content owner");
   });
 
-  // Test duplicate content prevention
-  it("Should not allow duplicate content registration", async function () {
-    const title = "Blockchain for Research";
-    const ipfsHash = "QmXYZ1234567890abcdef";
+  it("Should add and remove collaborators", async function () {
+    await researchRegistry.addCollaborator(contentId, addr1.address);
 
-    // Register content
-    await researchRegistry.registerContent(title, ipfsHash);
+    const collaborators = await researchRegistry.getCollaborators(contentId);
+    expect(collaborators).to.include(addr1.address);
 
-    // Try registering the same content again
+    await researchRegistry.removeCollaborator(contentId, addr1.address);
+
+    const updatedCollaborators = await researchRegistry.getCollaborators(
+      contentId
+    );
+    expect(updatedCollaborators).to.not.include(addr1.address);
+  });
+
+  it("Should prevent collaborators from voting to flag the content", async function () {
+    await researchRegistry.addCollaborator(contentId, addr1.address);
+
     await expect(
-      researchRegistry.registerContent(title, ipfsHash)
-    ).to.be.revertedWith("Content already registered");
+      researchRegistry.connect(addr1).voteToFlagContent(contentId)
+    ).to.be.revertedWith("Collaborators cannot vote");
+  });
+
+  it("Should prevent the owner from voting to flag the content", async function () {
+    await expect(
+      researchRegistry.connect(owner).voteToFlagContent(contentId)
+    ).to.be.revertedWith("Owner cannot vote");
+  });
+
+  it("Should allow independent voters to flag content", async function () {
+    await researchRegistry.connect(addr2).voteToFlagContent(contentId);
+    await researchRegistry.connect(addr3).voteToFlagContent(contentId);
+
+    const flaggedContent = await researchRegistry.getLatestContent(contentId);
+    expect(flaggedContent.flagged).to.be.true;
+  });
+
+  it("Should allow independent voters to restore flagged content", async function () {
+    await researchRegistry.connect(addr2).voteToRestoreContent(contentId);
+    await researchRegistry.connect(addr3).voteToRestoreContent(contentId);
+
+    const restoredContent = await researchRegistry.getLatestContent(contentId);
+    expect(restoredContent.flagged).to.be.false;
+  });
+
+  it("Should prevent unauthorized users from adding collaborators", async function () {
+    await expect(
+      researchRegistry.connect(addr1).addCollaborator(contentId, addr2.address)
+    ).to.be.revertedWith("Only the owner can add collaborators");
+  });
+
+  it("Should transfer ownership successfully", async function () {
+    await researchRegistry.transferOwnership(contentId, addr1.address);
+
+    const newOwnerContent = await researchRegistry.getLatestContent(contentId);
+    expect(newOwnerContent.owner).to.equal(addr1.address);
+  });
+
+  it("Should prevent non-owners from transferring ownership", async function () {
+    await expect(
+      researchRegistry
+        .connect(addr2)
+        .transferOwnership(contentId, addr3.address)
+    ).to.be.revertedWith("Only the owner can transfer ownership");
   });
 });
