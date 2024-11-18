@@ -3,6 +3,12 @@
 
 # **Decentralized Content Sharing App: User Manual**
 
+
+![diagram-export-11-18-2024-12_41_38-AM](https://github.com/user-attachments/assets/546bfd4b-1532-486a-9ca6-39b19be74815)
+
+
+
+
 ## **Table of Contents**
 
 1. [Introduction](#introduction)
@@ -131,6 +137,8 @@ To connect to the Polygon Amoy Testnet:
 - **Identity Verification**: Secure access with Privado ID for credential verification.
 
 ---
+
+
 
 
 ## **License**
