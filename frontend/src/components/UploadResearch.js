@@ -20,6 +20,7 @@ import {
   FileUpload,
   InsertDriveFile,
   CheckCircle,
+  Error as ErrorIcon,
 } from "@mui/icons-material";
 import { uploadToIPFS, retrieveFromIPFS } from "../services/ipfsService";
 import { registerContent, getWeb3 } from "../services/web3Service";
@@ -161,17 +162,14 @@ const UploadPage = () => {
           {statusMessage}
         </Alert>
       )}
-      {errorMessage && (
-        <Snackbar
-          open={openSnackbar}
-          autoHideDuration={6000}
-          onClose={handleSnackbarClose}
-          anchorOrigin={{ vertical: "top", horizontal: "center" }}
-        >
-          <Alert onClose={handleSnackbarClose} severity="error">
-            {errorMessage}
-          </Alert>
-        </Snackbar>
+
+      {(uploadStatus === "error" || registerStatus === "error") && (
+        <Box sx={{ mt: 2, display: "flex", alignItems: "center" }}>
+          <ErrorIcon color="error" />
+          <Typography variant="body2" color="error" sx={{ ml: 1 }}>
+            {errorMessage || "An error occurred during the process."}
+          </Typography>
+        </Box>
       )}
 
       <Box
@@ -250,6 +248,14 @@ const UploadPage = () => {
             <CircularProgress size={20} color="primary" />
           )}
           {uploadStatus === "success" && <CheckCircle color="success" />}
+          {uploadStatus === "error" && (
+            <>
+              <ErrorIcon color="error" />
+              <Typography variant="body2" color="error" sx={{ ml: 1 }}>
+                Error uploading to IPFS
+              </Typography>
+            </>
+          )}
         </Box>
 
         <Box sx={{ mt: 2, display: "flex", alignItems: "center" }}>
@@ -260,6 +266,14 @@ const UploadPage = () => {
             <CircularProgress size={20} color="primary" />
           )}
           {registerStatus === "success" && <CheckCircle color="success" />}
+          {registerStatus === "error" && (
+            <>
+              <ErrorIcon color="error" />
+              <Typography variant="body2" color="error" sx={{ ml: 1 }}>
+                Error registering on blockchain
+              </Typography>
+            </>
+          )}
         </Box>
 
         {isUploading ? (

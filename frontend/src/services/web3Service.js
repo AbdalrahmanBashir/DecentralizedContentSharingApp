@@ -3,8 +3,10 @@ import contractABI from "../abi/ResearchRegistryABIv2.json";
 import { getCurrentAccount } from "../hooks/useWallet";
 
 // contract address on the polygon testnet amoy
+const contractAddress = "0xcBc62d71bc3340b3a39010b164c0bC9A04A1bFED";
 // contract address on the ganache local network
-const contractAddress = "0xbE9E53Dd36de08220f571207c81988D24052d308";
+//const contractAddress = "0x09E2103C2A278E2081023E4CA3154a19C036738e";
+//const contractAddress = "0xbE9E53Dd36de08220f571207c81988D24052d308";
 
 let web3Instance;
 let contractInstance;

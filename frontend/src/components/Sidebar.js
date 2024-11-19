@@ -74,7 +74,18 @@ const Navbar = () => {
         <Typography
           variant="h6"
           component="div"
-          sx={{ flexGrow: 1, color: "white", fontWeight: "bold" }}
+          sx={{
+            flexGrow: 1,
+            fontWeight: "bold",
+            color: "#FFFFFF",
+            fontSize: { xs: "1.5rem", md: "2rem" },
+            textShadow: "0 2px 4px rgba(0, 0, 0, 0.3)",
+            transition: "all 0.3s ease-in-out",
+            "&:hover": {
+              color: "#E0E0E0",
+              textShadow: "0 4px 8px rgba(0, 0, 0, 0.5)",
+            },
+          }}
         >
           Decentralized Content Platform
         </Typography>
@@ -100,14 +111,14 @@ const Navbar = () => {
                 to="/view-content"
                 onClick={handleMenuClose}
               >
-                <VisibilityIcon sx={{ mr: 1 }} /> View Content
+                <VisibilityIcon sx={{ mr: 1 }} /> View Contents
               </MenuItem>
               <MenuItem
                 component={Link}
                 to="/content-management"
                 onClick={handleMenuClose}
               >
-                <AccountCircleIcon sx={{ mr: 1 }} /> User Management
+                <AccountCircleIcon sx={{ mr: 1 }} /> Contents Management
               </MenuItem>
             </Menu>
           </>
@@ -135,7 +146,7 @@ const Navbar = () => {
               to="/view-content"
               startIcon={<VisibilityIcon />}
             >
-              View Content
+              View Contents
             </Button>
             <Button
               color="inherit"
@@ -143,7 +154,7 @@ const Navbar = () => {
               to="/content-management"
               startIcon={<AccountCircleIcon />}
             >
-              User Management
+              Contents Management
             </Button>
           </Box>
         )}

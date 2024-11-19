@@ -5,10 +5,23 @@ const getRawBody = require("raw-body");
 const cors = require("cors");
 const http = require("http");
 const crypto = require("crypto");
+const os = require("os");
 
 const app = express();
 const port = 8009;
 const server = http.createServer(app);
+
+function getLocalIPAddress() {
+  const interfaces = os.networkInterfaces();
+  for (const interfaceName in interfaces) {
+    for (const interface of interfaces[interfaceName]) {
+      if (interface.family === "IPv4" && !interface.internal) {
+        return interface.address;
+      }
+    }
+  }
+  return "127.0.0.1"; // Fallback to localhost if no IP is found
+}
 
 app.use(cors({ origin: "*" }));
 
@@ -77,7 +90,8 @@ app.get("/api/verify-status", (req, res) => {
 
 // Function to create and return an auth request
 async function GetAuthRequest(req, res) {
-  const hostUrl = `http://192.168.12.138:${port}`;
+  const localIP = getLocalIPAddress();
+  const hostUrl = `http://${localIP}:${port}`;
   const sessionId = crypto.randomUUID();
   const callbackURL = "/api/callback";
   const audience =

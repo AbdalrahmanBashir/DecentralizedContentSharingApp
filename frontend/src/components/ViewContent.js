@@ -60,7 +60,7 @@ const AllContent = () => {
   const [openHistoryDialog, setOpenHistoryDialog] = useState(false);
   const { account, connectWallet } = useWallet();
 
-  const itemsPerPage = 6;
+  const itemsPerPage = 9;
 
   // Fetch content details and user account
   const fetchData = useCallback(async () => {

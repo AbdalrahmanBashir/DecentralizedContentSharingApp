@@ -17,6 +17,8 @@ import {
   TextField,
   Chip,
   Snackbar,
+  useMediaQuery,
+  Pagination,
 } from "@mui/material";
 import {
   Category,
@@ -35,6 +37,7 @@ import {
   HighlightOff,
   Done,
 } from "@mui/icons-material";
+import { useTheme } from "@mui/material/styles";
 import {
   fetchUserContent,
   updateContentDetails,
@@ -64,6 +67,11 @@ const ContentManagement = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   const { account, connectWallet } = useWallet();
+  const theme = useTheme();
+  const [page, setPage] = useState(1);
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const itemsPerPage = 9;
 
   // Fetch user's content
   const loadUserContent = useCallback(async () => {
@@ -128,6 +136,10 @@ const ContentManagement = () => {
     setDialogOpen(true);
   };
 
+  const handlePageChange = (event, value) => {
+    setPage(value);
+  };
+
   // Unified performAction function
   const performAction = async () => {
     if (!selectedContent) return;
@@ -175,6 +187,11 @@ const ContentManagement = () => {
       setActionLoading(false);
     }
   };
+  const totalPages = Math.ceil(contentList.length / itemsPerPage);
+  const paginatedContent = contentList.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
 
   return (
     <Box sx={{ p: 3, bgcolor: "#f0f0f0", minHeight: "100vh" }}>
@@ -192,8 +209,8 @@ const ContentManagement = () => {
         </Alert>
       )}
 
-      <Grid container spacing={3}>
-        {contentList.map((content) => (
+      <Grid container spacing={isMobile ? 2 : 3} sx={{ mt: 2 }}>
+        {paginatedContent.map((content) => (
           <Grid item xs={12} sm={6} md={4} key={content.id}>
             <Card variant="outlined" sx={{ boxShadow: 3, borderRadius: 2 }}>
               <CardContent>
@@ -378,6 +395,16 @@ const ContentManagement = () => {
           <Button onClick={handleDialogClose}>Cancel</Button>
         </DialogActions>
       </Dialog>
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+        <Pagination
+          count={totalPages}
+          page={page}
+          onChange={handlePageChange}
+          color="primary"
+          //variant="outlined"
+          //shape="rounded"
+        />
+      </Box>
     </Box>
   );
 };

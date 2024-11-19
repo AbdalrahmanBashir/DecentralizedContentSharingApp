@@ -57,9 +57,7 @@ const VerifyPage = () => {
   // Set up Server-Sent Events (SSE) for real-time updates
   useEffect(() => {
     if (!sessionId) return;
-    //10.168.96.26
-    //http://192.168.12.138
-    const sseUrl = `http://192.168.12.138:8009/api/verify-status?sessionId=${sessionId}`;
+    const sseUrl = `${window.location.protocol}//${window.location.hostname}:8009/api/verify-status?sessionId=${sessionId}`;
     const eventSource = new EventSource(sseUrl);
 
     console.log("Setting up SSE listener for session ID:", sessionId);

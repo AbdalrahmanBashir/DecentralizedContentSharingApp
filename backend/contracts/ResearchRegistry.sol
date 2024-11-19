@@ -34,6 +34,7 @@ contract ResearchRegistry {
     mapping(bytes32 => mapping(address => bool)) public restoreVotes;
     mapping(bytes32 => mapping(address => bool)) public verifyVotes;
     mapping(string => bool) public registeredIpfsHashes;
+    
 
 
     bytes32[] public allContentIds;
