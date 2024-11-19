@@ -26,6 +26,10 @@
 
 Welcome to the **Decentralized Content Sharing App**, a DApp built to enable users to share, register, and verify content on the blockchain. This application leverages IPFS for decentralized storage and integrates Privado ID for secure identity verification.
 
+[![Decentralized Content Sharing App](http://img.youtube.com/vi/NH30di3vP6g/0.jpg)](http://www.youtube.com/watch?v=NH30di3vP6g "A video demo")
+
+
+
 ---
 
 ## **System Requirements**
